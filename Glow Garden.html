@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glow Garden</title>
+<style>
+:root{--bg:#FFF3C9;--card:#FFFBEF;--ink:#5a4650;--mut:#9a8590;--pink:#F4B8C6;--blue:#B9D4EE;--sage:#C9DEB8;--gold:#D4A94E;--line:#f0dfae;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2b2327;--card:#3a2f35;--ink:#f5e8e1;--mut:#b9a4ae;--line:#4d3f47}}
+:root[data-theme="dark"]{--bg:#2b2327;--card:#3a2f35;--ink:#f5e8e1;--mut:#b9a4ae;--line:#4d3f47}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Nunito','Quicksand',system-ui,sans-serif;background-image:radial-gradient(var(--line) 1.5px,transparent 1.6px);background-size:26px 26px;min-height:100vh}
+#app{max-width:480px;margin:0 auto;padding:14px 16px 110px}
+h1,h2,.serif{font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-style:italic;font-weight:600;margin:0}
+h1{font-size:30px}h2{font-size:24px;margin-bottom:6px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.chip{background:var(--card);border:1.5px solid var(--pink);border-radius:20px;padding:5px 11px;font-size:13px;font-weight:700}
+.card{background:var(--card);border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 4px 18px rgba(212,169,78,.18);border:1.5px solid var(--line)}
+.mut{color:var(--mut);font-size:13px}
+.frame{position:relative;border-radius:22px;overflow:hidden;border:4px solid var(--card);box-shadow:0 0 0 2px var(--pink)}
+canvas{width:100%;display:block;max-height:380px;object-fit:cover}
+.bar{height:12px;background:var(--line);border-radius:9px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--gold));border-radius:9px;transition:width .6s}
+.btn{border:0;border-radius:22px;padding:13px 18px;font:inherit;font-weight:800;color:#5a4650;background:var(--pink);cursor:pointer;width:100%;font-size:16px}
+.btn.b{background:var(--blue)}.btn.s{background:var(--sage)}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px}
+.pill{border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:18px;padding:9px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.pill.on{background:var(--pink);border-color:var(--pink);color:#5a4650}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row.c{justify-content:center}
+.glass{font-size:26px;opacity:.28;filter:grayscale(1);transition:.3s}.glass.f{opacity:1;filter:none;transform:scale(1.1)}
+.meal{display:flex;flex-direction:column;gap:7px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.meal:last-child{border:0}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:2px;background:var(--card);border-top:2px solid var(--pink);padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));z-index:5}
+nav button{flex:1;max-width:90px;border:0;background:none;color:var(--mut);font:inherit;font-size:11px;font-weight:700;cursor:pointer;border-radius:14px;padding:5px 0}
+nav button span{display:block;font-size:22px}nav button.on{color:var(--ink);background:var(--bg)}
+input[type=time]{font:inherit;font-size:22px;padding:8px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center}
+.st{font-size:30px;background:var(--bg);border-radius:16px;padding:6px 0}.st.lock{opacity:.35;filter:grayscale(1)}
+#toast{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-90px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-weight:800;transition:.4s;z-index:20;max-width:90%;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+.cf{position:fixed;top:-30px;font-size:24px;z-index:15;pointer-events:none;animation:fall 2.2s ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(360deg);opacity:.6}}
+.big{font-size:44px;line-height:1}
+.dots{display:flex;gap:6px;justify-content:space-between}.dots div{text-align:center;font-size:11px}.dots b{display:block;font-size:22px}
+</style></head><body>
+<div id="toast"></div>
+<div id="app"><div class="top"><div><h1>Glow Garden</h1><div class="mut" id="sub"></div></div><div class="chip" id="stk"></div></div><main id="v"></main></div>
+<nav id="nav"></nav>
+<script>
+const $=s=>document.querySelector(s);
+let S=null;try{S=JSON.parse(localStorage.getItem('glow1'))}catch(e){}
+S=S||{photo:null,days:{},got:[]};
+const save=()=>{try{localStorage.setItem('glow1',JSON.stringify(S))}catch(e){toast('Storage is full')}};
+const key=(o=0)=>{const d=new Date();d.setDate(d.getDate()-o);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const day=(k=key())=>S.days[k]||(S.days[k]={w:0,m:{},sl:null,p:[]});
+const early=t=>{const [h,m]=t.split(':').map(Number),x=h*60+m;return x>=18*60&&x<=23*60};
+const MP={l:8,p:10,o:3};
+const xp=d=>d?d.w*10+Object.values(d.m).reduce((a,v)=>a+(MP[v]||0),0)+(d.sl?15+(early(d.sl)?10:0):0)+Math.min(2,d.p.length)*15:0;
+const total=()=>Object.values(S.days).reduce((a,d)=>a+xp(d),0);
+const streak=()=>{let c=0;for(let o=0;o<400;o++){if(xp(S.days[key(o)])>=30)c++;else if(o>0)break}return c};
+const LV=['Dewdrop','Petal','Bud','Blossom','Bouquet','Garden','Meadow','Orchard'];
+const ST=['🎀','🍒','🍓','🦋','🐦','🌸','🧺','🕯️','🐴','🌷','🫐','🧁','🌙','⭐','🎠','🦢','🎈','🐰','🍑','🌼'];
+const MEALS=[['b','Breakfast','🥐'],['l','Lunch','🍱'],['d','Dinner','🍝'],['s','Snack','🍓']];
+let tab='glow',gt=null,img=null,stTime='23:00';
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2400)}
+function boom(){const a=['🎀','🌸','✨','🍒','🦋','⭐'];for(let i=0;i<22;i++){const s=document.createElement('span');s.className='cf';s.textContent=a[i%6];s.style.left=Math.random()*95+'%';s.style.animationDelay=Math.random()*.6+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3200)}}
+function reward(k){if(S.got.some(x=>x.k===k))return;const own=S.got.map(x=>x.s),pool=ST.filter(s=>!own.includes(s));if(!pool.length)return;const s=pool[Math.random()*pool.length|0];S.got.push({k,s});toast('New sticker unlocked '+s);boom()}
+function check(){const k=key(),d=day();if(d.w>=8)reward(k+'water');if(['b','l','d'].every(x=>d.m[x]&&d.m[x]!=='o'))reward(k+'meals');if(d.sl)reward(k+'sleep');if(d.p.length)reward(k+'gut')}
+function act(f){const before=Math.floor(total()/200);f();check();save();if(Math.floor(total()/200)>before){toast('Level up: '+LV[Math.min(7,Math.floor(total()/200))]+'!');boom()}render()}
+function sip(n){act(()=>{const d=day();const w=Math.max(0,d.w+n);if(n>0&&w<=8&&Math.random()<.2)reward(key()+'g'+w);d.w=w;if(n>0&&w==8){toast('Daily water goal reached!');boom()}else if(n>0)toast(['Hydrated, glowing','Skin says thank you','Sip sip, clearer already','Dewy!'][w%4])})}
+const meal=(m,v)=>act(()=>{const d=day();if(d.m[m]===v)delete d.m[m];else{d.m[m]=v;toast(v==='o'?'Thanks for being honest. Next meal is a fresh start.':v==='p'?'Perfect 80% full':'Light and gentle')}});
+const logSleep=()=>act(()=>{day().sl=stTime;toast(early(stTime)?'Early bedtime bonus!':'Bedtime logged')});
+const logGut=()=>{if(!gt){toast('Pick a type first');return}act(()=>{day().p.push({t:Date.now(),b:gt});gt=null;toast('Logged. Your gut is being heard.')})};
+const undoGut=()=>act(()=>{const d=day();d.p.pop()});
+function blurSmall(src,W,H,f){let c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(src,0,0,W,H);while(c.width>W/f){const n=document.createElement('canvas');n.width=Math.max(2,c.width>>1);n.height=Math.max(2,c.height>>1);const x=n.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(c,0,0,n.width,n.height);c=n}const o=document.createElement('canvas');o.width=W;o.height=H;const x=o.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(c,0,0,W,H);return x.getImageData(0,0,W,H)}
+function glow(cv,im,t){const W=Math.min(560,im.naturalWidth),H=Math.round(im.naturalHeight*W/im.naturalWidth);cv.width=W;cv.height=H;const c=cv.getContext('2d');c.drawImage(im,0,0,W,H);if(t<.02)return;const o=c.getImageData(0,0,W,H),B=blurSmall(c.canvas,W,H,16).data,D=o.data,cl=(v,a,b)=>v<a?a:v>b?b:v;
+for(let i=0;i<D.length;i+=4){let r=D[i],g=D[i+1],b=D[i+2];const red=r-(g+b)/2,m=cl(red/32,0,1),w=t*(.3+.65*m);r+=(B[i]-r)*w;g+=(B[i+1]-g)*w;b+=(B[i+2]-b)*w;const r2=r-(g+b)/2;if(r2>0)r-=r2*t*.5;const L=t*16;D[i]=cl(r+L,0,255);D[i+1]=cl(g+L*.95,0,255);D[i+2]=cl(b+L*.9,0,255)}
+c.putImageData(o,0,0);const gr=c.createRadialGradient(W/2,H*.4,W*.1,W/2,H*.4,W*.8);gr.addColorStop(0,'rgba(255,240,215,.9)');gr.addColorStop(1,'rgba(255,200,215,0)');c.globalAlpha=t*.22;c.fillStyle=gr;c.fillRect(0,0,W,H)}
+function pick(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const W=Math.min(640,im.naturalWidth),H=Math.round(im.naturalHeight*W/im.naturalWidth),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(im,0,0,W,H);S.photo=c.toDataURL('image/jpeg',.85);save();img=null;render()};im.src=r.result};r.readAsDataURL(f)}
+function clarity(){const s=streak(),base=Math.min(.25,s*.025);return base+(1-base)*Math.min(1,day().w/8)}
+function vGlow(){const d=day(),t=clarity();let h='';
+if(!S.photo)h+=`<div class="card" style="text-align:center"><div class="big">🧺</div><h2>Start with your skin photo</h2><p class="mut">Pick a clear, well-lit selfie. It stays only in this browser and never leaves your device.</p><label class="btn">Choose photo<input type="file" accept="image/*" hidden onchange="pick(event)"></label></div>`;
+else h+=`<div class="card"><div class="frame"><canvas id="cv"></canvas></div><div class="row" style="justify-content:space-between;margin-top:10px"><b>Glow ${Math.round(t*100)}%</b><label class="mut" style="cursor:pointer;text-decoration:underline">change photo<input type="file" accept="image/*" hidden onchange="pick(event)"></label></div><div class="bar"><i style="width:${t*100}%"></i></div><div class="mut">Every glass brings your glow closer. Imagine it, then drink it into being.</div></div>`;
+h+=`<div class="card"><h2>Water</h2><div class="row c" style="margin:6px 0 12px">${[...Array(8)].map((_,i)=>`<span class="glass ${i<d.w?'f':''}">💧</span>`).join('')}</div><div class="row"><button class="btn b" style="flex:1" onclick="sip(1)">Sip a glass +10</button><button class="btn sm pill" onclick="sip(-1)">undo</button></div><div class="mut" style="margin-top:8px">${d.w} of 8 glasses (about ${d.w*250} ml). A glass is roughly 250 ml.</div></div>`;return h}
+function vEat(){const d=day();return `<div class="card"><h2>Eat softly</h2><div class="mut">Stop at about 80% full. Slow down, put your fork down between bites, and wait 20 minutes before seconds.</div>${MEALS.map(([k,n,e])=>`<div class="meal"><b>${e} ${n}</b><div class="row">${[['l','Light'],['p','Just right (80%)'],['o','Overfull']].map(([v,l])=>`<button class="pill ${d.m[k]===v?'on':''}" onclick="meal('${k}','${v}')">${l}</button>`).join('')}</div></div>`).join('')}</div><div class="card mut">Three "just right" or light meals unlock a sticker. Overfull days still count for honesty.</div>`}
+function vSleep(){const d=day(),rows=[...Array(7)].map((_,i)=>{const x=S.days[key(6-i)],dt=new Date();dt.setDate(dt.getDate()-(6-i));return `<div><b>${x&&x.sl?(early(x.sl)?'🌙':'🦉'):'·'}</b>${dt.toLocaleDateString([], {weekday:'short'})}<br>${x&&x.sl||'-'}</div>`}).join('');
+return `<div class="card"><h2>Bedtime</h2><div class="mut">Going to bed by 11pm earns a bonus. Your gut and skin repair overnight.</div><div class="row" style="margin:14px 0;align-items:center"><input type="time" value="${d.sl||stTime}" onchange="stTime=this.value"><button class="btn s" style="flex:1" onclick="logSleep()">${d.sl?'Update bedtime':'Log bedtime'}</button></div>${d.sl?`<div class="mut">Today: ${d.sl}</div>`:''}</div><div class="card"><b>This week</b><div class="dots" style="margin-top:10px">${rows}</div></div>`}
+function vGut(){const all=Object.values(S.days).flatMap(d=>d.p).sort((a,b)=>b.t-a.t),now=Date.now(),wk=all.filter(p=>now-p.t<6048e5).length,last=all[0],ds=last?Math.floor((now-last.t)/864e5):null;
+const T=['Hard lumps','Lumpy','Cracked','Smooth','Soft blobs','Mushy','Liquid'];
+return `<div class="card"><h2>Gut log</h2><div class="row" style="justify-content:space-around;text-align:center;margin:8px 0"><div><div class="big">${wk}</div><div class="mut">this week</div></div><div><div class="big">${ds===null?'-':ds}</div><div class="mut">days since last</div></div></div>
+${ds>=3?`<div class="mut" style="background:var(--bg);border-radius:14px;padding:10px;margin-bottom:10px">It has been a few days. Warm water in the morning, fibre, a gentle walk and extra fluids can help. If it persists, mention it to your doctor.</div>`:''}
+<div class="mut" style="margin-bottom:6px">Pick the type (Bristol scale):</div><div class="row">${T.map((n,i)=>`<button class="pill ${gt===i+1?'on':''}" onclick="gt=${i+1};render()">${i+1} ${n}</button>`).join('')}</div><button class="btn" style="margin-top:12px" onclick="logGut()">Log it +15</button></div>
+<div class="card"><b>Recent</b>${all.slice(0,6).map(p=>`<div class="mut" style="padding:5px 0">${new Date(p.t).toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · type ${p.b} (${T[p.b-1]})</div>`).join('')||'<div class="mut">Nothing logged yet.</div>'}${day().p.length?'<button class="pill" style="margin-top:8px" onclick="undoGut()">undo last today</button>':''}</div>`}
+function vGarden(){const t=total(),lv=Math.floor(t/200),nm=LV[Math.min(7,lv)],pr=(t%200)/200*100,own=S.got.map(x=>x.s);
+const wk=[...Array(7)].map((_,i)=>{const x=S.days[key(6-i)],dt=new Date();dt.setDate(dt.getDate()-(6-i));return `<div><b>${xp(x)>=30?'🌸':'🌱'}</b>${dt.toLocaleDateString([], {weekday:'narrow'})}</div>`}).join('');
+return `<div class="card" style="text-align:center"><div class="big">🎀</div><h2>Level ${lv+1}: ${nm}</h2><div class="bar"><i style="width:${pr}%"></i></div><div class="mut">${t} XP · ${200-t%200} XP to the next bloom</div></div>
+<div class="card"><b>Your week</b><div class="dots" style="margin-top:8px">${wk}</div><div class="mut" style="margin-top:8px">A day blooms at 30 XP. Missed a day? No reset, just come back and bloom again.</div></div>
+<div class="card"><b>Sticker book ${own.length}/${ST.length}</b><div class="grid" style="margin-top:10px">${ST.map(s=>`<div class="st ${own.includes(s)?'':'lock'}">${own.includes(s)?s:'?'}</div>`).join('')}</div><div class="mut" style="margin-top:8px">Earn them by finishing water, meals, bedtime and gut log. Sometimes a glass of water surprises you too.</div></div>`}
+function render(){const T={glow:['✨','Glow',vGlow],eat:['🍽️','Eat',vEat],sleep:['🌙','Sleep',vSleep],gut:['🌿','Gut',vGut],garden:['🎀','Garden',vGarden]};
+$('#v').innerHTML=T[tab][2]();$('#nav').innerHTML=Object.entries(T).map(([k,v])=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';render()"><span>${v[0]}</span>${v[1]}</button>`).join('');
+$('#sub').textContent=['Hello, gorgeous','Sip, bloom, glow'][new Date().getDate()%2];$('#stk').textContent='🔥 '+streak()+' day streak';
+const cv=$('#cv');if(cv&&S.photo){const go=()=>glow(cv,img,clarity());if(img)go();else{img=new Image();img.onload=go;img.src=S.photo}}}
+render();
+</script></body></html>
